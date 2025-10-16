@@ -158,12 +158,14 @@
 
                         <!-- Importar Datos (Guardar como / Cargar) -->
                         <div class="relative">
-                             <input type="file" id="import-file" accept=".json" class="hidden" onchange="window.handleImport(event)">
+                             <!-- CAMBIADO: Aceptar solo archivos CSV -->
+                             <input type="file" id="import-file" accept=".csv" class="hidden" onchange="window.handleImport(event)">
                              <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center justify-center space-x-2 py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-500 hover:bg-yellow-600 transition duration-150">
                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
                                     <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 16.17a7.5 7.5 0 0 1 14.998 0 .75.75 0 0 1-.433.82c-.859.39-1.782.724-2.753.999a48.57 48.57 0 0 1-9.034 0c-.971-.275-1.894-.609-2.753-.999a.75.75 0 0 1-.432-.82Zm6.452 3.012l.235.526a1.5 1.5 0 0 0 1.341.972l.189.006A1.5 1.5 0 0 0 14.184 19.7z" clip-rule="evenodd" />
                                  </svg>
-                                 <span>Importar/Cargar (.json)</span>
+                                 <!-- CAMBIADO: Etiqueta a CSV -->
+                                 <span>Importar/Cargar (.csv)</span>
                              </button>
                         </div>
                     </div>
@@ -240,7 +242,11 @@
         let currentCompany = 'LEOON TEAM';
         let currentExchangeRate = null; // Tasa de cambio USD/COP
 
-        // Función para generar un ID único (reemplaza los IDs de Firestore)
+        // Definición de las columnas esperadas en el CSV
+        const EXPECTED_CSV_HEADERS = ["Tipo", "Monto (USD)", "Fecha", "Descripción"];
+        // La columna de ID no se espera en el archivo importado, se genera al importar.
+
+        // Función para generar un ID único
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -248,7 +254,7 @@
             });
         }
 
-        // Función para mostrar un modal
+        // Función para mostrar un modal (reemplaza alert/confirm)
         function showModal(title, body) {
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').textContent = body;
@@ -290,7 +296,6 @@
 
         /**
          * Carga las transacciones de localStorage para la compañía actual.
-         * (Reemplaza la función onSnapshot de Firebase).
          */
         function loadTransactions() {
             const key = getLocalStorageKey(currentCompany);
@@ -385,8 +390,6 @@
 
         /**
          * Manejador para agregar una nueva transacción.
-         * (Actualizado para usar localStorage).
-         * @param {Event} event - El evento de envío del formulario.
          */
         async function handleAddTransaction(event) {
             event.preventDefault();
@@ -424,8 +427,6 @@
 
         /**
          * Manejador para eliminar una transacción por su ID.
-         * (Actualizado para usar localStorage).
-         * @param {string} transactionId - ID de la transacción.
          */
         window.handleDeleteTransaction = function(transactionId) {
             if (!transactionId) return;
@@ -445,7 +446,6 @@
 
         /**
          * Exporta las transacciones actuales a un archivo CSV.
-         * (Implementa 'Guardar como' en formato tabular).
          */
         window.exportToCSV = function() {
             if (transactionsStore.length === 0) {
@@ -453,9 +453,10 @@
                 return;
             }
 
+            // Usamos las mismas cabeceras que se esperan en la importación, más las internas
             const header = ["ID", "Compañía", "Tipo", "Monto (USD)", "Fecha", "Descripción"];
             const csvRows = [];
-            csvRows.push(header.join(';')); // Separador de punto y coma para compatibilidad europea
+            csvRows.push(header.join(';')); // Separador de punto y coma para compatibilidad
 
             transactionsStore.forEach(t => {
                 const amount = (t.type === 'gasto' ? '-' : '') + parseFloat(t.amount).toFixed(2);
@@ -463,7 +464,7 @@
                     `"${t.id}"`, // ID entre comillas
                     `"${t.company}"`,
                     `"${t.type}"`,
-                    amount.replace('.', ','), // Reemplazar punto por coma para formato de número en CSV
+                    amount.replace('.', ','), // Reemplazar punto por coma para formato de número
                     `"${t.date}"`, // Fecha YYYY-MM-DD
                     `"${t.description.replace(/"/g, '""')}"` // Sanitizar descripción
                 ];
@@ -486,9 +487,7 @@
         }
         
         /**
-         * Maneja la carga de un archivo JSON y lo importa como nuevas transacciones.
-         * (Implementa 'Importar/Cargar').
-         * @param {Event} event - Evento de cambio del input file.
+         * CONVERSIÓN DE CSV A TRANSACCIONES
          */
         window.handleImport = function(event) {
             const file = event.target.files[0];
@@ -497,40 +496,19 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const importedData = JSON.parse(e.target.result);
-                    
-                    if (!Array.isArray(importedData)) {
-                        throw new Error("El archivo no contiene un array de transacciones válido.");
-                    }
-                    
-                    // Validación mínima de la estructura (debe tener al menos 'type' y 'amount')
-                    const isValid = importedData.every(t => t.type && typeof t.amount === 'number');
+                    const csvText = e.target.result;
+                    const importedTransactions = parseCSV(csvText);
 
-                    if (!isValid) {
-                        throw new Error("Los datos importados no cumplen con el formato requerido (debe incluir 'type', 'amount', etc.).");
-                    }
-                    
-                    // Asignar nuevos IDs y limpiar el campo 'company' para asegurar consistencia
-                    const sanitizedTransactions = importedData.map(t => ({
-                        id: generateUUID(),
-                        type: String(t.type).toLowerCase(),
-                        amount: parseFloat(t.amount) || 0,
-                        date: t.date ? String(t.date).split('T')[0] : new Date().toISOString().split('T')[0],
-                        description: String(t.description || 'Importado'),
-                        timestamp: Date.now() + Math.random(),
-                        company: currentCompany, // Asegurar que la compañía sea la actual
-                    }));
-                    
                     // Reemplazar la tienda actual (comportamiento de 'Guardar como' o 'Cargar')
-                    transactionsStore = sanitizedTransactions; 
+                    transactionsStore = importedTransactions; 
                     saveTransactions();
                     loadTransactions();
                     
-                    showModal("Importación Exitosa", `${sanitizedTransactions.length} transacciones han sido importadas y cargadas en ${currentCompany}.`);
+                    showModal("Importación Exitosa", `${importedTransactions.length} transacciones han sido importadas y cargadas en ${currentCompany}.`);
 
                 } catch (error) {
-                    console.error("Error al importar el archivo:", error);
-                    showModal("Error de Importación", `Error al procesar el archivo: ${error.message}. Asegúrate de que es un JSON de transacciones válido.`);
+                    console.error("Error al importar el archivo CSV:", error);
+                    showModal("Error de Importación", `Error al procesar el archivo CSV: ${error.message}. Asegúrate de que las cabeceras y el formato sean correctos (Tipo;Monto (USD);Fecha;Descripción).`);
                 }
                 // Resetear el input file para permitir cargar el mismo archivo de nuevo
                 event.target.value = '';
@@ -538,10 +516,135 @@
 
             reader.readAsText(file);
         }
-        
+
+        /**
+         * Parsea una cadena CSV y devuelve un array de objetos de transacción.
+         * Espera el formato: Tipo;Monto (USD);Fecha;Descripción
+         * @param {string} csvText - Contenido del archivo CSV.
+         * @returns {Array<Object>} Array de transacciones válidas.
+         */
+        function parseCSV(csvText) {
+            // Dividir en filas (manejar diferentes saltos de línea)
+            const rows = csvText.trim().split(/[\r\n]+/);
+            if (rows.length < 2) {
+                throw new Error("El archivo CSV está vacío o solo contiene la cabecera.");
+            }
+            
+            // Determinar el delimitador: buscar el que aparece más en la primera fila (encabezados)
+            const firstRow = rows[0];
+            let delimiter = ','; // Coma por defecto
+            // Intentar detectar un delimitador común si el primero no es una coma
+            if (firstRow.split(';').length > firstRow.split(',').length) {
+                delimiter = ';'; // Punto y coma si es más común
+            } else if (firstRow.split('\t').length > firstRow.split(',').length) {
+                 delimiter = '\t'; // Tabulador
+            }
+            
+            // 1. Obtener cabeceras y mapearlas a índices
+            const headers = rows[0].split(delimiter).map(h => h.trim().replace(/"/g, ''));
+            
+            // Mapeo para facilitar el acceso por nombre de columna
+            // CAMBIO: Hacemos el mapeo más tolerante para evitar errores con nombres de columna ligeramente diferentes.
+            const headerMap = {
+                // Tipo: busca cualquier columna que contenga 'tipo'
+                'tipo': headers.findIndex(h => h.toLowerCase().includes('tipo')),
+                // Monto: busca cualquier columna que contenga 'monto' o 'valor' (más flexible que Monto (USD))
+                'monto': headers.findIndex(h => h.toLowerCase().includes('monto') || h.toLowerCase().includes('valor')),
+                // Fecha: busca cualquier columna que contenga 'fecha'
+                'fecha': headers.findIndex(h => h.toLowerCase().includes('fecha')),
+                // Descripción: busca cualquier columna que contenga 'descrip'
+                'descripcion': headers.findIndex(h => h.toLowerCase().includes('descrip')),
+            };
+            
+            // 2. Validación de Cabeceras
+            // Usamos las claves de mapeo más flexibles
+            if (headerMap.tipo === -1 || headerMap.monto === -1 || headerMap.fecha === -1 || headerMap.descripcion === -1) {
+                throw new Error(`Cabeceras CSV inválidas. Se esperan al menos: ${EXPECTED_CSV_HEADERS.join(', ')}. Verifica que las columnas estén presentes y sean legibles.`);
+            }
+
+            const newTransactions = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i].trim();
+                if (!row) continue;
+
+                // Simple split por el delimitador detectado
+                const values = row.split(delimiter).map(v => v.trim().replace(/"/g, ''));
+                
+                // Asegurar que haya suficientes columnas
+                if (values.length < headers.length) {
+                    // Si faltan columnas, podría ser una línea mal formada, la ignoramos
+                    console.warn(`Fila ${i + 1} incompleta:`, row);
+                    continue; 
+                }
+
+                try {
+                    // Extracción y saneamiento de valores
+                    let type = values[headerMap.tipo].toLowerCase().trim();
+                    let amountStr = values[headerMap.monto].trim(); // CAMBIO: Usamos la clave 'monto'
+                    let dateStr = values[headerMap.fecha].trim();
+                    let description = values[headerMap.descripcion].trim();
+                    
+                    // Manejar formato de número: aceptar '.' o ',' como separador decimal
+                    amountStr = amountStr.replace('.', '#').replace(',', '.').replace('#', '');
+                    let amount = parseFloat(amountStr.replace(/[^\d.-]/g, '')); // Eliminar cualquier caracter no numérico (excepto . y -)
+
+                    // Si el monto es negativo, forzar el tipo a 'gasto'
+                    if (amount < 0) {
+                        type = 'gasto';
+                        amount = Math.abs(amount);
+                    }
+                    
+                    // Validación de tipo
+                    if (type !== 'ingreso' && type !== 'gasto') {
+                        // Si el tipo no es claro, lo intentamos inferir del monto o lo forzamos a 'gasto' por seguridad
+                        type = amount >= 0 ? 'ingreso' : 'gasto'; 
+                        amount = Math.abs(amount);
+                    }
+
+                    if (isNaN(amount) || amount <= 0) {
+                        throw new Error(`Monto inválido: ${values[headerMap.monto]}`);
+                    }
+                    if (description === '') {
+                        description = 'Transacción importada sin descripción';
+                    }
+                    // Sanitizar y forzar la fecha al formato YYYY-MM-DD
+                    const date = new Date(dateStr);
+                    if (isNaN(date.getTime())) {
+                       // Si la fecha es inválida, usar la fecha de hoy
+                       dateStr = new Date().toISOString().split('T')[0];
+                    } else {
+                        // Formatear la fecha a YYYY-MM-DD para almacenamiento consistente
+                        dateStr = date.toISOString().split('T')[0];
+                    }
+
+
+                    const newTransaction = {
+                        id: generateUUID(),
+                        type: type,
+                        amount: amount,
+                        date: dateStr, 
+                        description: description,
+                        timestamp: Date.now() + i, // Asegurar un timestamp único
+                        company: currentCompany,
+                    };
+
+                    newTransactions.push(newTransaction);
+
+                } catch (e) {
+                    console.error(`Error de procesamiento en la fila ${i + 1}: ${e.message}`, values);
+                    // No lanzar error aquí, solo en el nivel superior.
+                }
+            }
+            
+            if (newTransactions.length === 0) {
+                 throw new Error("No se pudieron extraer transacciones válidas del archivo CSV. Revisa el formato.");
+            }
+
+            return newTransactions;
+        }
+
         /**
          * Cambia la vista activa (Finanzas o Convertidor).
-         * Esta función es accesible globalmente para los botones del header.
          * @param {string} viewName - 'finances' o 'converter'.
          */
         window.switchView = function(viewName) {
@@ -550,9 +653,11 @@
             const financesBtn = document.getElementById('finances-btn');
             const converterBtn = document.getElementById('converter-btn');
 
+            // Lógica para cambiar la visibilidad de las vistas
             if (viewName === 'finances') {
                 financesView.classList.remove('hidden');
                 converterView.classList.add('hidden');
+                // Lógica de estilo para botones
                 financesBtn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
                 financesBtn.classList.remove('text-gray-700', 'hover:bg-gray-100');
                 converterBtn.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-700');
@@ -560,6 +665,7 @@
             } else if (viewName === 'converter') {
                 financesView.classList.add('hidden');
                 converterView.classList.remove('hidden');
+                // Lógica de estilo para botones
                 converterBtn.classList.add('bg-green-600', 'text-white', 'hover:bg-green-700');
                 converterBtn.classList.remove('text-gray-700', 'hover:bg-gray-100');
                 financesBtn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
@@ -569,7 +675,6 @@
 
         /**
          * Cambia la compañía activa y recarga las transacciones de localStorage.
-         * Esta función es accesible globalmente para el select.
          * @param {string} companyName - Nombre de la nueva compañía.
          */
         window.switchCompany = function(companyName) {
@@ -585,14 +690,15 @@
 
         /**
          * Llama a la API de Google Search para obtener la tasa de cambio USD a COP.
+         * Implementa reintentos con backoff exponencial.
          */
         async function fetchExchangeRate() {
             const rateElement = document.getElementById('conversion-rate');
             rateElement.textContent = 'Buscando tasa...';
 
-            // Consulta a COP
+            // Definición de la consulta
             const userQuery = "Tasa de cambio USD a COP actual";
-            const apiKey = "" // Se deja vacío para que Canvas lo inyecte
+            const apiKey = "" // El API Key se inyecta automáticamente en Canvas
 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
@@ -628,9 +734,10 @@
                             currentExchangeRate = rate;
                             rateElement.textContent = currentExchangeRate.toFixed(4);
                             console.log(`Tasa de cambio USD/COP obtenida: ${currentExchangeRate}`);
-                            return;
+                            return; // Salir del bucle y la función al tener éxito
                         }
                     }
+                    // Si la IA no devolvió un valor numérico válido
                     console.warn(`Intento ${currentRetry + 1} fallido: La IA no devolvió una tasa válida. Respuesta: ${rateText}`);
 
                 } catch (error) {
@@ -639,6 +746,7 @@
 
                 currentRetry++;
                 if (currentRetry < maxRetries) {
+                    // Esperar con backoff exponencial
                     await new Promise(resolve => setTimeout(resolve, Math.pow(2, currentRetry) * 1000));
                 }
             }
@@ -646,7 +754,7 @@
             // Si falla después de todos los reintentos
             rateElement.textContent = 'No disponible';
             currentExchangeRate = null;
-            showModal("Error de Conversión", "No se pudo obtener la tasa de cambio actual. La aplicación cargará sin esta funcionalidad.");
+            showModal("Error de Conversión", "No se pudo obtener la tasa de cambio actual. La funcionalidad de conversión estará limitada.");
         }
 
         /**
