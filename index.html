@@ -29,901 +29,668 @@
         /* Clases de utilidad para colores de estado */
         .ingreso-bg { background-color: #d1fae5; } /* Green-100 */
         .gasto-bg { background-color: #fee2e2; } /* Red-100 */
-        .ingreso-text { color: #059669; } /* Green-600 */
-        .gasto-text { color: #dc2626; } /* Red-600 */
-        .tab-active {
-            border-bottom: 3px solid #3b82f6; /* Blue-500 */
-            font-weight: 700;
-            color: #1f2937; /* Gray-800 */
-        }
-        .tab-view-active {
-            border-bottom: 3px solid #10b981; /* Esmeralda-500 (Para la vista de catálogo/finanzas) */
-            font-weight: 700;
-            color: #1f2937;
+
+        /* Estilos de tabla responsiva */
+        @media (max-width: 768px) {
+            .table-row {
+                display: flex;
+                flex-wrap: wrap;
+                margin-bottom: 1rem;
+                padding: 1rem;
+                border: 1px solid #e2e8f0; /* Slate-200 */
+                border-radius: 0.5rem;
+            }
+            .table-cell {
+                flex: 1 1 100%; /* Las celdas ocupan el 100% en móvil */
+                padding: 0.25rem 0;
+            }
+            .table-cell:before {
+                content: attr(data-label);
+                font-weight: 600;
+                margin-right: 0.5rem;
+                display: inline-block;
+                width: 100px; /* Anchura de la etiqueta para alineación */
+            }
+            .table-header {
+                display: none; /* Ocultar encabezados en móvil */
+            }
         }
     </style>
 </head>
-<body>
-
-    <!-- Contenedor Principal y Header -->
-    <div class="min-h-screen p-4 sm:p-8">
-        <header class="mb-8 border-b pb-4">
-            <h1 class="text-4xl font-extrabold text-gray-900">Control Financiero Multi-Empresa (COP)</h1>
-            <p id="user-id-display" class="text-sm text-gray-500 mt-1"></p>
-        </header>
-
-        <!-- Navegación Principal (Finanzas vs Catálogo) -->
-        <nav class="flex border-b border-gray-200 mb-8">
-            <button id="finances-tab-btn" onclick="switchView('finances')" 
-                    class="py-3 px-6 text-lg text-gray-500 hover:text-gray-800 transition duration-150 tab-view-active">
-                Gestión Financiera
-            </button>
-            <button id="catalog-tab-btn" onclick="switchView('catalog')" 
-                    class="py-3 px-6 text-lg text-gray-500 hover:text-gray-800 transition duration-150">
-                Catálogo de Servicios
-            </button>
-        </nav>
-
-        <!-- Contenido de la Vista Activa (Finanzas o Catálogo) -->
-        <div id="main-content">
-            
-            <!-- VISTA DE GESTIÓN FINANCIERA (FINANCES) -->
-            <div id="finances-view">
-                <!-- Navegación por Pestañas (Empresas) - Dentro de la vista de Finanzas -->
-                <nav class="flex border-b border-gray-200 mb-8">
-                    <button id="leoon-team-tab" onclick="switchCompany('LEOON TEAM')" 
-                            class="py-3 px-6 text-lg text-gray-500 hover:text-gray-800 transition duration-150 tab-active">
-                        LEOON TEAM (Marketing & Automatización)
-                    </button>
-                    <button id="subly-plus-tab" onclick="switchCompany('SUBLY +')" 
-                            class="py-3 px-6 text-lg text-gray-500 hover:text-gray-800 transition duration-150">
-                        SUBLY + (Distribuidor de Streaming)
-                    </button>
-                </nav>
-
-                <!-- Sección de Resumen Dinámico -->
-                <section id="summary-dashboard" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <!-- Tarjeta de Ingresos Totales -->
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-green-200">
-                        <p class="text-sm font-semibold text-green-600 uppercase mb-2">Ingresos Totales (Ventas)</p>
-                        <p id="total-income" class="text-3xl font-bold text-green-700">$0.00</p>
-                    </div>
-                    <!-- Tarjeta de Gastos Totales -->
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-red-200">
-                        <p class="text-sm font-semibold text-red-600 uppercase mb-2">Gastos Totales</p>
-                        <p id="total-expense" class="text-3xl font-bold text-red-700">$0.00</p>
-                    </div>
-                    <!-- Tarjeta de Beneficio Neto -->
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-blue-200">
-                        <p class="text-sm font-semibold text-blue-600 uppercase mb-2">Beneficio Neto</p>
-                        <p id="net-profit" class="text-3xl font-bold text-blue-700">$0.00</p>
-                    </div>
-                </section>
-
-                <!-- Contenido principal: Formulario y Lista de Transacciones -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Columna de Ingreso de Datos (Formulario y Conversor) -->
-                    <div class="lg:col-span-1">
-                        <div class="bg-white p-6 rounded-xl shadow-2xl sticky top-8">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6" id="form-title">Nueva Transacción para LEOON TEAM</h2>
-
-                            <form id="transaction-form" class="space-y-4 mb-8 pb-4 border-b">
-                                <!-- Tipo de Transacción (Ingreso/Gasto) -->
-                                <div>
-                                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                                    <select id="type" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                                        <option value="Ingreso">Ingreso (Venta)</option>
-                                        <option value="Gasto">Gasto</option>
-                                    </select>
-                                </div>
-
-                                <!-- Descripción -->
-                                <div>
-                                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción / Concepto</label>
-                                    <input type="text" id="description" required placeholder="Ej: Pago de automatización" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                                </div>
-
-                                <!-- Monto -->
-                                <div>
-                                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Monto (COP)</label>
-                                    <input type="number" id="amount" required min="1" step="any" placeholder="Ej: 150000.00" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                                </div>
-
-                                <!-- LEOON TEAM: Cliente / Proyecto (Aparece condicionalmente) -->
-                                <div id="client-project-group">
-                                    <label for="client-project" class="block text-sm font-medium text-gray-700 mb-1">Cliente / Proyecto (LEOON TEAM)</label>
-                                    <input type="text" id="client-project" placeholder="Ej: Cliente 1 - Proyecto X" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                                </div>
-
-                                <!-- SUBLY +: Tipo de Servicio (Aparece condicionalmente) -->
-                                <div id="service-type-group" class="hidden">
-                                    <label for="service-type" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Servicio (SUBLY +)</label>
-                                    <select id="service-type" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                                        <option value="Venta General">Venta General de Streaming</option>
-                                        <option value="Disney">Disney / Star+</option>
-                                        <option value="Spotify">Spotify</option>
-                                        <option value="Costo Proveedor">Costo a Proveedor</option>
-                                        <option value="General">Gasto Operativo</option>
-                                    </select>
-                                </div>
-
-                                <!-- Miembro del Equipo (Opcional) -->
-                                <div>
-                                    <label for="team-member" class="block text-sm font-medium text-gray-700 mb-1">Miembro (Opcional)</label>
-                                    <input type="text" id="team-member" placeholder="Ej: Juan Pérez" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                                </div>
-
-                                <!-- Botón de Envío -->
-                                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md hover:shadow-lg">
-                                    Añadir Transacción
-                                </button>
-                            </form>
-                            
-                            <!-- Sección de Conversor de Moneda -->
-                            <div id="currency-converter">
-                                <h3 class="text-xl font-bold text-gray-800 mb-4">Conversor de USD a COP</h3>
-                                <p class="text-xs text-gray-500 mb-3">Tasa de cambio aproximada usando Google Search.</p>
-                                
-                                <div class="flex space-x-2 mb-3">
-                                    <input type="number" id="usd-input" min="0.01" step="0.01" placeholder="Monto en USD" class="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500 transition duration-150">
-                                    <button id="convert-btn" class="w-1/2 bg-yellow-500 text-white font-bold py-3 rounded-lg hover:bg-yellow-600 transition duration-300">
-                                        Convertir a COP
-                                    </button>
-                                </div>
-                                
-                                <!-- Resultado del Conversor -->
-                                <div id="conversion-result" class="p-3 text-center rounded-lg border-2 border-yellow-300 bg-yellow-50 text-gray-800 font-semibold min-h-[48px] flex items-center justify-center">
-                                    Ingresa un valor en USD y convierte.
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <!-- Columna de Lista de Transacciones (Tiempo Real) -->
-                    <div class="lg:col-span-2">
-                        <div class="bg-white p-6 rounded-xl shadow-2xl">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6" id="history-title">Historial de Transacciones (LEOON TEAM)</h2>
-
-                            <!-- Mensaje de Carga/No Datos -->
-                            <div id="loading-message" class="text-center p-8 text-gray-500">Cargando transacciones...</div>
-
-                            <!-- Contenedor de la lista de transacciones -->
-                            <div id="transaction-list" class="scrollable space-y-3">
-                                <!-- Las transacciones se renderizarán aquí -->
-                            </div>
-
-                            
-                        </div>
-                    </div>
-                </div>
-            </div> <!-- FIN VISTA DE GESTIÓN FINANCIERA -->
-
-            <!-- VISTA DE CATÁLOGO DE SERVICIOS (CATALOG) -->
-            <div id="catalog-view" class="hidden">
-                <div class="bg-white p-8 rounded-xl shadow-2xl">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Catálogo de Productos y Servicios (SUBLY +)</h2>
-                    <p class="text-gray-600 mb-6">Información extraída del archivo `CATALOGO.csv` y el inventario, útil para consultas rápidas de venta y disponibilidad.</p>
-
-                    <!-- SECCIÓN DE PRECIOS -->
-                    <h3 class="text-2xl font-semibold text-blue-600 mb-4">1. Precios de Venta y Ganancia Neta (1 Mes)</h3>
-                    <div class="overflow-x-auto mb-8">
-                        <table class="min-w-full divide-y divide-gray-200 rounded-lg overflow-hidden">
-                            <thead class="bg-blue-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto (1 Mes)</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Venta (CLP/COP/MXN)</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ganancia Neta Estimada</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">ENTRETENIMIENTO</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">NETFLIX (Pantalla/Perfil)</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">$16.000,00</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-green-600 font-medium">$7.680,00</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">ENTRETENIMIENTO</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">APPLE TV + (Pantalla/Perfil)</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">$18.000,00</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-green-600 font-medium">$13.500,00</td>
-                                </tr>
-                                <tr class="hover:bg-green-50 bg-green-50/70">
-                                    <td class="px-6 py-4 whitespace-nowrap font-semibold text-blue-800">COMBOS ⭐</td>
-                                    <td class="px-6 py-4 whitespace-nowrap font-bold text-blue-800">HBO MAX + VIX (Combo)</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right font-bold">$17.000,00</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-green-700 font-extrabold">$12.750,00</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">MÚSICA</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">DEEZER PREMIUM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">$10.000,00</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-green-600 font-medium">$7.500,00</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">MÚSICA</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">YOUTUBE PREMIUM</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">$10.000,00</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-green-600 font-medium">$4.000,00</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">PRODUCTIVIDAD</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">CAPCUT PRO (1 Dispositivo)</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right">$26.000,00</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-green-600 font-medium">$15.080,00</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-10">*Nota: Estos precios son solo ejemplos para 1 mes. Para 3 o 4 meses y otros combos, consultar el archivo `CATALOGO.csv`.</p>
-
-
-                    <!-- SECCIÓN DE INVENTARIO -->
-                    <h3 class="text-2xl font-semibold text-red-600 mb-4 flex items-center">
-                        2. Inventario Rápido de Cuentas Disponibles 
-                        <span class="ml-3 inline-flex items-center rounded-full bg-red-100 px-3 py-0.5 text-sm font-medium text-red-800">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            ¡Prioridad de Venta!
-                        </span>
-                    </h3>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        <!-- Mapeo de inventario -->
-                        <!-- Usamos la lista del resumen de markdown como fuente de datos para el frontend -->
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">HBO MAX</p>
-                            <p class="text-3xl font-extrabold text-red-600">2</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">PRIME (Amazon)</p>
-                            <p class="text-3xl font-extrabold text-red-600">2</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">PARAMOUNT</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">DISNEY PLUS</p>
-                            <p class="text-3xl font-extrabold text-red-600">2</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                         <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">SPOTIFY</p>
-                            <p class="text-3xl font-extrabold text-red-600">2</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">UNIVERSAL +</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">VIX</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">APPLE TV +</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">CRUNCHYROLL</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">YOUTUBE PREMIUM</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">DEEZER</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <div class="inventory-card bg-white p-4 rounded-lg shadow border border-red-200 text-center">
-                            <p class="text-lg font-bold text-gray-800">APPLE MUSIC</p>
-                            <p class="text-3xl font-extrabold text-red-600">3</p>
-                            <p class="text-xs text-gray-500">Espacios (Perfiles/Pantallas)</p>
-                        </div>
-                        <!-- ... (agregar más cards de inventario si es necesario) -->
-                    </div>
-                    
-                    <p class="text-sm text-gray-500 mt-8 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg">
-                        ⚠️ **Nota importante de Inventario:** Los archivos originales indican que hay filas vacías que solo dicen "DISPONIBLE". Es crucial verificar el **Correo** y la **Contraseña** para poder entregar las cuentas listadas aquí.
-                    </p>
-
-                </div>
-            </div> <!-- FIN VISTA DE CATÁLOGO -->
-
-
-        </div> <!-- FIN main-content -->
-
-
-        <!-- Modal para Mensajes (en lugar de alert) -->
-        <div id="message-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center p-4 z-50">
-            <div class="bg-white p-6 rounded-lg shadow-2xl max-w-sm w-full">
-                <h3 id="modal-title" class="text-xl font-bold mb-3"></h3>
-                <p id="modal-body" class="mb-4"></p>
-                <button onclick="closeModal()" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Entendido</button>
+<body class="min-h-screen">
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-900">
+                Panel Financiero
+            </h1>
+            <div class="flex space-x-4">
+                <button onclick="window.switchView('finances')" id="finances-btn" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-150 bg-blue-600 text-white hover:bg-blue-700">
+                    Finanzas
+                </button>
+                <button onclick="window.switchView('converter')" id="converter-btn" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-150 text-gray-700 hover:bg-gray-100">
+                    Convertidor
+                </button>
             </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Firebase SDKs y Script de la Aplicación -->
-    <script type="module">
-        // Importaciones de Firebase (Configuración y Firestore)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Importamos 'where' para filtrar por compañía
-        import { getFirestore, collection, addDoc, query, onSnapshot, deleteDoc, doc, setLogLevel, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Contenedor Principal de la Aplicación -->
+        <div id="app-container">
+            <!-- Vista de Finanzas (Activa por defecto) -->
+            <div id="finances-view" class="space-y-6">
 
-        // Configuración de Log (para depuración)
-        setLogLevel('Debug');
+                <!-- Selector de Compañía y Balance General -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-4">
+                        <div class="mb-4 md:mb-0">
+                            <label for="company-select" class="block text-sm font-medium text-gray-700 mb-2">
+                                Compañía Activa:
+                            </label>
+                            <select id="company-select" onchange="window.switchCompany(this.value)" class="mt-1 block w-full md:w-64 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                                <option value="LEOON TEAM">LEOON TEAM</option>
+                                <option value="SUBLY">SUBLY</option>
+                            </select>
+                        </div>
 
-        // Variables globales (proporcionadas por el entorno de Canvas)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                        <div id="balance-container" class="text-right">
+                            <p class="text-sm font-medium text-gray-500">Balance Total (USD)</p>
+                            <p id="current-balance" class="text-4xl font-extrabold text-gray-900 mt-1">$0.00</p>
+                        </div>
+                    </div>
+                </div>
 
-        let db = null;
-        let auth = null;
-        let userId = null;
-        let unsubscribe = null; // Para desuscribir el listener anterior al cambiar de vista
+                <!-- Formulario para Nueva Transacción -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Registrar Nueva Transacción</h2>
+                    <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <!-- Tipo -->
+                        <div class="md:col-span-2">
+                            <label for="type" class="block text-sm font-medium text-gray-700">Tipo</label>
+                            <select id="type" name="type" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option value="ingreso">Ingreso</option>
+                                <option value="gasto">Gasto</option>
+                            </select>
+                        </div>
+                        <!-- Monto -->
+                        <div class="md:col-span-2">
+                            <label for="amount" class="block text-sm font-medium text-gray-700">Monto (USD)</label>
+                            <input type="number" id="amount" name="amount" step="0.01" required placeholder="0.00" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <!-- Fecha -->
+                        <div class="md:col-span-2">
+                            <label for="date" class="block text-sm font-medium text-gray-700">Fecha</label>
+                            <input type="date" id="date" name="date" required value="" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <!-- Descripción -->
+                        <div class="md:col-span-6">
+                            <label for="description" class="block text-sm font-medium text-gray-700">Descripción</label>
+                            <input type="text" id="description" name="description" required placeholder="Ej: Pago de cliente, Compra de material" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <!-- Botón de Envío -->
+                        <div class="md:col-span-6 flex justify-end">
+                            <button type="submit" class="w-full md:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+                                Registrar Transacción
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
-        // Estado Global de la Compañía y Vista Activa
-        let currentCompany = 'LEOON TEAM'; 
-        let currentView = 'finances'; // 'finances' o 'catalog'
+                <!-- Utilidades de Datos: Exportar / Importar / Guardar -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Utilidades de Datos</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- Botón Exportar a CSV (Guardar como) -->
+                        <button onclick="window.exportToCSV()" class="flex items-center justify-center space-x-2 py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600 transition duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                <path d="M11.25 10.5v6m-3-3h6m3-8.675C17.472 2.378 16.275 1.5 15 1.5h-2.25V6L8.25 1.5H7.5A1.5 1.5 0 0 0 6 3v2.25L1.5 9v10.5a1.5 1.5 0 0 0 1.5 1.5h18a1.5 1.5 0 0 0 1.5-1.5V9l-4.5-4.5h-2.25Zm-8.497 2.47a.75.75 0 0 1-.722.53h-.022A.75.75 0 0 1 5.25 8.25V7.5h.75a.75.75 0 0 1 0 1.5H5.25a.75.75 0 0 1-.723-.53l-.022-.054a.75.75 0 0 1 .55-1.026.75.75 0 0 1 .722.53Z" />
+                            </svg>
+                            <span>Exportar a CSV</span>
+                        </button>
+                        
+                        <!-- Botón Guardar Copia Local (Forzar Guardado) -->
+                        <button onclick="window.saveTransactionsLocalManual()" class="flex items-center justify-center space-x-2 py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-500 hover:bg-indigo-600 transition duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                <path fill-rule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.66l2.97-2.97a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0l-4.25-4.25a.75.75 0 1 1 1.06-1.06l2.97 2.97V3a.75.75 0 0 1 .75-.75Zm-5.25 17.25a.75.75 0 0 1 0 1.5h10.5a.75.75 0 0 1 0-1.5H6.75Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>Guardar Copia Local</span>
+                        </button>
 
-        // API Key para el servicio Gemini (si se usa)
-        const apiKey = ""; 
+                        <!-- Importar Datos (Guardar como / Cargar) -->
+                        <div class="relative">
+                             <input type="file" id="import-file" accept=".json" class="hidden" onchange="window.handleImport(event)">
+                             <button onclick="document.getElementById('import-file').click()" class="w-full flex items-center justify-center space-x-2 py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-500 hover:bg-yellow-600 transition duration-150">
+                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 16.17a7.5 7.5 0 0 1 14.998 0 .75.75 0 0 1-.433.82c-.859.39-1.782.724-2.753.999a48.57 48.57 0 0 1-9.034 0c-.971-.275-1.894-.609-2.753-.999a.75.75 0 0 1-.432-.82Zm6.452 3.012l.235.526a1.5 1.5 0 0 0 1.341.972l.189.006A1.5 1.5 0 0 0 14.184 19.7z" clip-rule="evenodd" />
+                                 </svg>
+                                 <span>Importar/Cargar (.json)</span>
+                             </button>
+                        </div>
+                    </div>
+                </div>
 
-        // --- FUNCIONES DE UTILIDAD ---
+                <!-- Listado de Transacciones -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Historial de Transacciones</h2>
+                    <div id="transactions-list-container" class="scrollable border border-gray-200 rounded-lg">
+                        <div class="table-header hidden md:grid grid-cols-6 gap-4 p-4 bg-gray-50 text-xs font-semibold uppercase text-gray-600 border-b">
+                            <div class="col-span-1">Tipo</div>
+                            <div class="col-span-2">Descripción</div>
+                            <div class="col-span-1 text-right">Monto (USD)</div>
+                            <div class="col-span-1 text-right">Fecha</div>
+                            <div class="col-span-1 text-center">Acciones</div>
+                        </div>
+                        <div id="transactions-list" class="divide-y divide-gray-200">
+                            <!-- Las transacciones se renderizarán aquí -->
+                        </div>
+                    </div>
+                    <div id="empty-state" class="text-center py-8 text-gray-500 hidden">
+                        Aún no hay transacciones registradas para esta compañía. Los datos se guardan localmente en tu navegador.
+                    </div>
+                </div>
+            </div>
 
-        /** Muestra un modal de mensaje simple. */
+            <!-- Vista de Convertidor de Moneda (Oculta por defecto) -->
+            <div id="converter-view" class="space-y-6 hidden">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Conversor de Moneda (USD a COP)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Entrada de Monto -->
+                        <div>
+                            <label for="usd-amount" class="block text-sm font-medium text-gray-700">Monto en USD ($)</label>
+                            <input type="number" id="usd-amount" step="0.01" value="1.00" required class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <!-- Tasa y Botón -->
+                        <div class="flex flex-col justify-end">
+                            <button id="convert-btn" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150">
+                                Convertir
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Resultado -->
+                    <div id="conversion-result" class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
+                        <p class="text-xl font-bold text-blue-800">Resultado: <span>$0.00 COP</span></p>
+                        <p class="text-xs text-blue-600 mt-1">
+                            La tasa de conversión USD/COP actual es: <span id="conversion-rate" class="font-semibold">Cargando...</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Mensajes/Error -->
+        <div id="app-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center p-4 transition-opacity duration-300 z-50" aria-modal="true" role="dialog">
+            <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm transform transition-all">
+                <h3 id="modal-title" class="text-lg font-semibold text-gray-900 mb-4">Título</h3>
+                <p id="modal-body" class="text-sm text-gray-600 mb-6">Cuerpo del mensaje.</p>
+                <div class="flex justify-end">
+                    <button onclick="document.getElementById('app-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition duration-150">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Lógica de la Aplicación -->
+    <script>
+        // --- Variables Globales ---
+        let transactionsStore = []; // Caché en memoria de las transacciones de la compañía actual
+        let currentCompany = 'LEOON TEAM';
+        let currentExchangeRate = null; // Tasa de cambio USD/COP
+
+        // Función para generar un ID único (reemplaza los IDs de Firestore)
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // Función para mostrar un modal
         function showModal(title, body) {
-            const modalEl = document.getElementById('message-modal');
-            const titleEl = document.getElementById('modal-title');
-            const bodyEl = document.getElementById('modal-body');
-
-            if (modalEl && titleEl && bodyEl) {
-                titleEl.textContent = title;
-                bodyEl.textContent = body;
-                modalEl.classList.remove('hidden');
-                modalEl.classList.add('flex');
-            }
-        }
-
-        /** Cierra el modal de mensaje. */
-        window.closeModal = function() {
-            const modalEl = document.getElementById('message-modal');
-            if (modalEl) {
-                modalEl.classList.add('hidden');
-                modalEl.classList.remove('flex');
-            }
-        }
-
-        /** Formatea un número como moneda (COP). */
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('es-CO', {
-                style: 'currency',
-                currency: 'COP', 
-                minimumFractionDigits: 0 
-            }).format(amount);
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = body;
+            document.getElementById('app-modal').classList.remove('hidden');
         }
 
         /**
-         * Lógica de reintento con retroceso exponencial.
-         * @param {Function} fetcher - Función que realiza la llamada a la API.
-         * @param {number} maxRetries - Número máximo de reintentos.
-         * @param {number} delay - Retraso inicial en milisegundos.
+         * Obtiene la clave de localStorage para la compañía actual.
+         * @returns {string} Clave de localStorage.
          */
-        async function fetchWithExponentialBackoff(fetcher, maxRetries = 5, delay = 1000) {
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetcher();
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return await response.json();
-                } catch (error) {
-                    console.warn(`Intento ${i + 1} fallido. Reintentando en ${delay / 1000}s...`, error);
-                    if (i === maxRetries - 1) throw error; 
-
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2; 
-                }
-            }
+        function getLocalStorageKey(company) {
+            return `app-finance-transactions-${company.toUpperCase().replace(/\s/g, '_')}`;
         }
 
-
-        // --- INICIALIZACIÓN DE FIREBASE Y AUTENTICACIÓN ---
-
-        async function initFirebase() {
-            if (!firebaseConfig) {
-                console.error("Firebase configuration is missing.");
-                showModal("Error de Configuración", "La configuración de Firebase no está disponible. Los datos no se guardarán.");
-                return;
-            }
-
+        /**
+         * Guarda el array 'transactionsStore' en localStorage.
+         */
+        function saveTransactions() {
             try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // Autenticación: Usar token personalizado o iniciar sesión anónimamente
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                // Esperar a que el estado de autenticación se resuelva
-                return new Promise(resolve => {
-                    onAuthStateChanged(auth, (user) => {
-                        const userIdDisplay = document.getElementById('user-id-display');
-                        if (user) {
-                            userId = user.uid;
-                            console.log("Usuario autenticado. UID:", userId);
-                            if (userIdDisplay) userIdDisplay.textContent = `ID de Usuario: ${userId}`;
-                            resolve(true);
-                        } else {
-                            console.error("No se pudo autenticar al usuario.");
-                            userId = crypto.randomUUID(); 
-                            if (userIdDisplay) userIdDisplay.textContent = `ID Temporal (No Guardado): ${userId}`;
-                            resolve(false);
-                        }
-                    });
-                });
-
-            } catch (error) {
-                console.error("Error al inicializar Firebase o autenticar:", error);
-                showModal("Error Crítico", `No se pudo conectar a la base de datos: ${error.message}`);
-            }
-        }
-
-        // --- MANEJO DE VISTAS Y TABS ---
-
-        /**
-         * Cambia entre la vista principal (Finanzas) y la vista de Catálogo.
-         * @param {string} viewName - 'finances' o 'catalog'.
-         */
-        window.switchView = function(viewName) {
-            currentView = viewName;
-
-            const financesView = document.getElementById('finances-view');
-            const catalogView = document.getElementById('catalog-view');
-            const financesBtn = document.getElementById('finances-tab-btn');
-            const catalogBtn = document.getElementById('catalog-tab-btn');
-
-            if (financesView && catalogView && financesBtn && catalogBtn) {
-                if (viewName === 'finances') {
-                    financesView.classList.remove('hidden');
-                    catalogView.classList.add('hidden');
-                    financesBtn.classList.add('tab-view-active');
-                    catalogBtn.classList.remove('tab-view-active');
-                    // Asegura que el listener de finanzas esté activo al volver
-                    setupRealtimeListener(); 
-                } else if (viewName === 'catalog') {
-                    financesView.classList.add('hidden');
-                    catalogView.classList.remove('hidden');
-                    catalogBtn.classList.add('tab-view-active');
-                    financesBtn.classList.remove('tab-view-active');
-                    // Detiene el listener de finanzas
-                    if (unsubscribe) {
-                        unsubscribe(); 
-                        unsubscribe = null;
-                    }
-                }
-            }
-        }
-
-        /**
-         * Cambia la vista de la compañía activa y actualiza el listener.
-         * @param {string} companyName - El nombre de la compañía ('LEOON TEAM' o 'SUBLY +').
-         */
-        window.switchCompany = function(companyName) {
-            if (currentCompany === companyName) return;
-
-            currentCompany = companyName;
-
-            // Obtenemos todos los elementos necesarios y los verificamos inmediatamente
-            const leoonTab = document.getElementById('leoon-team-tab');
-            const sublyTab = document.getElementById('subly-plus-tab');
-            const formTitle = document.getElementById('form-title');
-            const historyTitle = document.getElementById('history-title');
-            const clientGroup = document.getElementById('client-project-group');
-            const serviceGroup = document.getElementById('service-type-group');
-            const clientInput = document.getElementById('client-project');
-            const serviceSelect = document.getElementById('service-type');
-            
-            // 1. Actualizar estilos de las pestañas
-            if (leoonTab) leoonTab.classList.remove('tab-active');
-            if (sublyTab) sublyTab.classList.remove('tab-active');
-            
-            const tabId = companyName.toLowerCase().replace(' ', '-').replace('+', '');
-            const activeTab = document.getElementById(tabId + '-tab');
-            if (activeTab) activeTab.classList.add('tab-active');
-
-            // 2. Actualizar títulos
-            const displayTitle = companyName.includes('LEOON') ? 'LEOON TEAM' : 'SUBLY +';
-            if (formTitle) formTitle.textContent = `Nueva Transacción para ${displayTitle}`;
-            if (historyTitle) historyTitle.textContent = `Historial de Transacciones (${displayTitle})`;
-            
-            // 3. Ocultar/Mostrar campos condicionales en el formulario
-            const isLeoon = companyName === 'LEOON TEAM';
-            if (clientGroup) clientGroup.classList.toggle('hidden', !isLeoon);
-            if (serviceGroup) serviceGroup.classList.toggle('hidden', isLeoon);
-
-            // 4. Resetear campos condicionales (limpieza)
-            if (clientInput) clientInput.value = '';
-            if (serviceSelect) serviceSelect.value = 'Venta General';
-            
-            // 5. Reiniciar el listener de Firestore, solo si estamos en la vista de finanzas
-            if (currentView === 'finances') {
-                setupRealtimeListener();
+                const key = getLocalStorageKey(currentCompany);
+                localStorage.setItem(key, JSON.stringify(transactionsStore));
+                // console.log(`Transacciones guardadas para ${currentCompany} en localStorage.`);
+                return true;
+            } catch (e) {
+                console.error("Error al guardar en localStorage:", e);
+                showModal("Error de Guardado Local", "No se pudieron guardar los datos. El almacenamiento local puede estar lleno.");
+                return false;
             }
         }
         
-        // --- CONVERSOR DE MONEDA (USD a COP) ---
-        // (Las funciones getExchangeRate y handleConvertCurrency se mantienen igual que en la versión anterior)
+        /**
+         * Función para forzar el guardado manual (Guardar)
+         */
+        window.saveTransactionsLocalManual = function() {
+            if (saveTransactions()) {
+                showModal("Guardado Exitoso", `Las transacciones de ${currentCompany} se han guardado localmente en tu navegador.`);
+            }
+        }
 
-        /** Obtiene la tasa de cambio USD a COP usando Google Search. */
-        async function getExchangeRate() {
+        /**
+         * Carga las transacciones de localStorage para la compañía actual.
+         * (Reemplaza la función onSnapshot de Firebase).
+         */
+        function loadTransactions() {
+            const key = getLocalStorageKey(currentCompany);
+            const storedData = localStorage.getItem(key);
+            transactionsStore = storedData ? JSON.parse(storedData) : [];
+            console.log(`Transacciones cargadas para ${currentCompany}. Total: ${transactionsStore.length}`);
+            renderTransactions(transactionsStore);
+        }
+
+        /**
+         * Renderiza una lista de transacciones en la interfaz de usuario.
+         * @param {Array<Object>} transactions - El array de transacciones.
+         */
+        function renderTransactions(transactions) {
+            const listElement = document.getElementById('transactions-list');
+            const emptyState = document.getElementById('empty-state');
+            listElement.innerHTML = ''; // Limpiar lista
+
+            if (transactions.length === 0) {
+                listElement.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                updateBalance(0); // Balance a cero si no hay transacciones
+                return;
+            }
+
+            listElement.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            let totalBalance = 0;
+
+            // Ordenar por fecha y luego por timestamp (más reciente primero, orden descendente)
+            const sortedTransactions = transactions.sort((a, b) => {
+                // Asegurar que la fecha sea manejable
+                const dateA = new Date(a.date).getTime();
+                const dateB = new Date(b.date).getTime();
+
+                // Primero ordenar por fecha (más reciente primero)
+                if (dateB !== dateA) {
+                    return dateB - dateA;
+                }
+                // Si la fecha es igual, ordenar por el timestamp de creación (más reciente primero)
+                return b.timestamp - a.timestamp;
+            });
+
+            sortedTransactions.forEach(t => {
+                const amount = parseFloat(t.amount);
+                const typeClass = t.type === 'ingreso' ? 'ingreso-bg text-green-700' : 'gasto-bg text-red-700';
+                const sign = t.type === 'ingreso' ? '+' : '-';
+                // Usar el formato YYYY-MM-DD guardado para el objeto Date
+                const formattedDate = new Date(t.date + 'T00:00:00').toLocaleDateString('es-ES');
+
+                totalBalance += t.type === 'ingreso' ? amount : -amount;
+
+                const row = document.createElement('div');
+                row.className = `table-row grid md:grid-cols-6 gap-4 p-4 hover:bg-gray-50 transition duration-100 ${typeClass}`;
+                row.dataset.id = t.id; // Almacenar el ID del documento
+
+                row.innerHTML = `
+                    <div class="table-cell col-span-1 font-semibold capitalize" data-label="Tipo:">${t.type}</div>
+                    <div class="table-cell col-span-2 text-gray-800" data-label="Descripción:">${t.description}</div>
+                    <div class="table-cell col-span-1 text-right font-mono" data-label="Monto:">
+                        <span class="font-bold">${sign}$${Math.abs(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+                    </div>
+                    <div class="table-cell col-span-1 text-right text-gray-600 text-sm" data-label="Fecha:">${formattedDate}</div>
+                    <div class="table-cell col-span-1 flex justify-center space-x-2" data-label="Acciones:">
+                        <button onclick="window.handleDeleteTransaction('${t.id}')" class="text-red-500 hover:text-red-700 transition duration-150 p-1 rounded-full hover:bg-white" aria-label="Eliminar transacción">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                <path fill-rule="evenodd" d="M16.5 4.478a.75.75 0 0 1 .428.204l4.5 4.5a.75.75 0 0 1 .204.428V19.5a2.25 2.25 0 0 1-2.25 2.25h-13.5A2.25 2.25 0 0 1 3 19.5V9.61a.75.75 0 0 1 .204-.428l4.5-4.5a.75.75 0 0 1 .428-.204h7.5Zm-9.927.427a1.5 1.5 0 0 1 2.121 0l4.5 4.5a1.5 1.5 0 0 1 0 2.121l-4.5 4.5a1.5 1.5 0 0 1-2.121 0l-4.5-4.5a1.5 1.5 0 0 1 0-2.121l4.5-4.5Z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                listElement.appendChild(row);
+            });
+
+            updateBalance(totalBalance);
+        }
+
+        /**
+         * Actualiza el saldo total en la interfaz.
+         * @param {number} balance - El saldo total.
+         */
+        function updateBalance(balance) {
+            const balanceElement = document.getElementById('current-balance');
+            const colorClass = balance >= 0 ? 'text-green-600' : 'text-red-600';
+
+            // Limpiar clases de color anteriores y aplicar la nueva
+            balanceElement.className = balanceElement.className.replace(/text-(green|red)-600/g, '') + ` ${colorClass}`;
+
+            balanceElement.textContent = `$${balance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+        }
+
+        /**
+         * Manejador para agregar una nueva transacción.
+         * (Actualizado para usar localStorage).
+         * @param {Event} event - El evento de envío del formulario.
+         */
+        async function handleAddTransaction(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const type = form.type.value;
+            const amount = parseFloat(form.amount.value);
+            const dateStr = form.date.value; // Formato YYYY-MM-DD
+            const description = form.description.value.trim();
+
+            if (isNaN(amount) || amount <= 0 || description === '') {
+                showModal("Error de Validación", "Por favor, introduce un monto positivo y una descripción válida.");
+                return;
+            }
+
+            // Crear el objeto de la transacción con ID y timestamp local
+            const newTransaction = {
+                id: generateUUID(),
+                type: type,
+                amount: amount,
+                date: new Date(dateStr + 'T00:00:00').toISOString().split('T')[0], // Guardar solo la fecha en formato ISO (YYYY-MM-DD)
+                description: description,
+                timestamp: Date.now(), // Timestamp de creación para ordenamiento secundario
+                company: currentCompany,
+            };
+
+            transactionsStore.push(newTransaction);
+            saveTransactions(); // Guardar en localStorage
+            loadTransactions(); // Recargar y renderizar la interfaz
+
+            form.reset(); // Limpiar el formulario
+            document.getElementById('date').valueAsDate = new Date(); // Resetear fecha al día de hoy
+            showModal("Transacción Registrada", `El ${type} de $${amount.toFixed(2)} se ha añadido correctamente a ${currentCompany}.`);
+        }
+
+        /**
+         * Manejador para eliminar una transacción por su ID.
+         * (Actualizado para usar localStorage).
+         * @param {string} transactionId - ID de la transacción.
+         */
+        window.handleDeleteTransaction = function(transactionId) {
+            if (!transactionId) return;
+
+            const initialLength = transactionsStore.length;
+            // Filtrar el array para remover la transacción
+            transactionsStore = transactionsStore.filter(t => t.id !== transactionId);
+
+            if (transactionsStore.length < initialLength) {
+                saveTransactions(); // Guardar el nuevo estado
+                loadTransactions(); // Recargar y renderizar la interfaz
+                showModal("Transacción Eliminada", "El registro financiero ha sido borrado exitosamente.");
+            } else {
+                showModal("Error al Eliminar", "No se encontró la transacción para eliminar.");
+            }
+        }
+
+        /**
+         * Exporta las transacciones actuales a un archivo CSV.
+         * (Implementa 'Guardar como' en formato tabular).
+         */
+        window.exportToCSV = function() {
+            if (transactionsStore.length === 0) {
+                showModal("Exportación Fallida", "No hay transacciones para exportar.");
+                return;
+            }
+
+            const header = ["ID", "Compañía", "Tipo", "Monto (USD)", "Fecha", "Descripción"];
+            const csvRows = [];
+            csvRows.push(header.join(';')); // Separador de punto y coma para compatibilidad europea
+
+            transactionsStore.forEach(t => {
+                const amount = (t.type === 'gasto' ? '-' : '') + parseFloat(t.amount).toFixed(2);
+                const row = [
+                    `"${t.id}"`, // ID entre comillas
+                    `"${t.company}"`,
+                    `"${t.type}"`,
+                    amount.replace('.', ','), // Reemplazar punto por coma para formato de número en CSV
+                    `"${t.date}"`, // Fecha YYYY-MM-DD
+                    `"${t.description.replace(/"/g, '""')}"` // Sanitizar descripción
+                ];
+                csvRows.push(row.join(';'));
+            });
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const filename = `Transacciones_${currentCompany}_${new Date().toISOString().split('T')[0]}.csv`;
+
+            // Crear un enlace temporal para la descarga
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showModal("Exportación Completa", `Las transacciones de ${currentCompany} se han exportado como ${filename}.`);
+        }
+        
+        /**
+         * Maneja la carga de un archivo JSON y lo importa como nuevas transacciones.
+         * (Implementa 'Importar/Cargar').
+         * @param {Event} event - Evento de cambio del input file.
+         */
+        window.handleImport = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(importedData)) {
+                        throw new Error("El archivo no contiene un array de transacciones válido.");
+                    }
+                    
+                    // Validación mínima de la estructura (debe tener al menos 'type' y 'amount')
+                    const isValid = importedData.every(t => t.type && typeof t.amount === 'number');
+
+                    if (!isValid) {
+                        throw new Error("Los datos importados no cumplen con el formato requerido (debe incluir 'type', 'amount', etc.).");
+                    }
+                    
+                    // Asignar nuevos IDs y limpiar el campo 'company' para asegurar consistencia
+                    const sanitizedTransactions = importedData.map(t => ({
+                        id: generateUUID(),
+                        type: String(t.type).toLowerCase(),
+                        amount: parseFloat(t.amount) || 0,
+                        date: t.date ? String(t.date).split('T')[0] : new Date().toISOString().split('T')[0],
+                        description: String(t.description || 'Importado'),
+                        timestamp: Date.now() + Math.random(),
+                        company: currentCompany, // Asegurar que la compañía sea la actual
+                    }));
+                    
+                    // Reemplazar la tienda actual (comportamiento de 'Guardar como' o 'Cargar')
+                    transactionsStore = sanitizedTransactions; 
+                    saveTransactions();
+                    loadTransactions();
+                    
+                    showModal("Importación Exitosa", `${sanitizedTransactions.length} transacciones han sido importadas y cargadas en ${currentCompany}.`);
+
+                } catch (error) {
+                    console.error("Error al importar el archivo:", error);
+                    showModal("Error de Importación", `Error al procesar el archivo: ${error.message}. Asegúrate de que es un JSON de transacciones válido.`);
+                }
+                // Resetear el input file para permitir cargar el mismo archivo de nuevo
+                event.target.value = '';
+            };
+
+            reader.readAsText(file);
+        }
+        
+        /**
+         * Cambia la vista activa (Finanzas o Convertidor).
+         * Esta función es accesible globalmente para los botones del header.
+         * @param {string} viewName - 'finances' o 'converter'.
+         */
+        window.switchView = function(viewName) {
+            const financesView = document.getElementById('finances-view');
+            const converterView = document.getElementById('converter-view');
+            const financesBtn = document.getElementById('finances-btn');
+            const converterBtn = document.getElementById('converter-btn');
+
+            if (viewName === 'finances') {
+                financesView.classList.remove('hidden');
+                converterView.classList.add('hidden');
+                financesBtn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                financesBtn.classList.remove('text-gray-700', 'hover:bg-gray-100');
+                converterBtn.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-700');
+                converterBtn.classList.add('text-gray-700', 'hover:bg-gray-100');
+            } else if (viewName === 'converter') {
+                financesView.classList.add('hidden');
+                converterView.classList.remove('hidden');
+                converterBtn.classList.add('bg-green-600', 'text-white', 'hover:bg-green-700');
+                converterBtn.classList.remove('text-gray-700', 'hover:bg-gray-100');
+                financesBtn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                financesBtn.classList.add('text-gray-700', 'hover:bg-gray-100');
+            }
+        }
+
+        /**
+         * Cambia la compañía activa y recarga las transacciones de localStorage.
+         * Esta función es accesible globalmente para el select.
+         * @param {string} companyName - Nombre de la nueva compañía.
+         */
+        window.switchCompany = function(companyName) {
+            if (currentCompany !== companyName) {
+                currentCompany = companyName;
+                document.getElementById('company-select').value = companyName;
+                console.log(`Cambiando a compañía: ${currentCompany}`);
+
+                // Cargar datos del almacenamiento local para la nueva compañía
+                loadTransactions();
+            }
+        }
+
+        /**
+         * Llama a la API de Google Search para obtener la tasa de cambio USD a COP.
+         */
+        async function fetchExchangeRate() {
+            const rateElement = document.getElementById('conversion-rate');
+            rateElement.textContent = 'Buscando tasa...';
+
+            // Consulta a COP
+            const userQuery = "Tasa de cambio USD a COP actual";
+            const apiKey = "" // Se deja vacío para que Canvas lo inyecte
+
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            
-            const systemPrompt = "Eres un asistente de conversión de moneda. Responde ÚNICAMENTE con la tasa de cambio actual de 1 USD a COP como un número flotante simple. No añadas texto, explicaciones, unidades ni formatos.";
-            const userQuery = "Tasa de cambio actual USD a COP";
-            
+
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
                 tools: [{ "google_search": {} }],
                 systemInstruction: {
-                    parts: [{ text: systemPrompt }]
+                    parts: [{ text: "Extrae únicamente el valor numérico de la tasa de cambio USD a COP del texto de la búsqueda. Por ejemplo, si el texto es '1 USD = 3850 COP', devuelve '3850'. Si no hay un número claro, devuelve 'ERROR'." }]
                 },
             };
 
-            const fetcher = () => fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const maxRetries = 3;
+            let currentRetry = 0;
 
-            try {
-                const result = await fetchWithExponentialBackoff(fetcher);
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            while (currentRetry < maxRetries) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
-                if (text && !isNaN(parseFloat(text))) {
-                    return parseFloat(text);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const rateText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+                    if (rateText && rateText !== 'ERROR') {
+                        const rate = parseFloat(rateText);
+                        if (!isNaN(rate) && rate > 0) {
+                            currentExchangeRate = rate;
+                            rateElement.textContent = currentExchangeRate.toFixed(4);
+                            console.log(`Tasa de cambio USD/COP obtenida: ${currentExchangeRate}`);
+                            return;
+                        }
+                    }
+                    console.warn(`Intento ${currentRetry + 1} fallido: La IA no devolvió una tasa válida. Respuesta: ${rateText}`);
+
+                } catch (error) {
+                    console.error(`Error en la llamada a la API (Intento ${currentRetry + 1}):`, error);
                 }
-                
-                console.error("API Response was not a valid number:", text);
-                return null;
-            } catch (error) {
-                console.error("Error fetching exchange rate:", error);
-                return null;
+
+                currentRetry++;
+                if (currentRetry < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, currentRetry) * 1000));
+                }
             }
+
+            // Si falla después de todos los reintentos
+            rateElement.textContent = 'No disponible';
+            currentExchangeRate = null;
+            showModal("Error de Conversión", "No se pudo obtener la tasa de cambio actual. La aplicación cargará sin esta funcionalidad.");
         }
 
         /**
-         * Maneja la conversión de USD a COP.
+         * Manejador para la conversión de moneda.
          */
-        async function handleConvertCurrency() {
-            const usdInput = document.getElementById('usd-input');
-            const resultDiv = document.getElementById('conversion-result');
-            const convertBtn = document.getElementById('convert-btn');
-            
-            if (!usdInput || !resultDiv || !convertBtn) return; // Chequeo defensivo
-
+        function handleConvertCurrency() {
+            const usdInput = document.getElementById('usd-amount');
+            const resultSpan = document.querySelector('#conversion-result span');
             const usdAmount = parseFloat(usdInput.value);
 
             if (isNaN(usdAmount) || usdAmount <= 0) {
-                resultDiv.textContent = "Por favor, ingresa un monto válido en USD.";
+                showModal("Monto Inválido", "Por favor, introduce un monto en USD válido y positivo para convertir.");
                 return;
             }
 
-            convertBtn.textContent = "Convirtiendo...";
-            convertBtn.disabled = true;
-            resultDiv.classList.add('animate-pulse');
-
-            try {
-                const rate = await getExchangeRate();
-
-                if (rate) {
-                    const copAmount = usdAmount * rate;
-                    // Reemplazamos 'COP' con 'USD' en el formato de currency para mostrar correctamente el origen
-                    resultDiv.textContent = `${formatCurrency(usdAmount).replace('COP', 'USD')} ≈ ${formatCurrency(copAmount)}`;
-                } else {
-                    resultDiv.textContent = "No se pudo obtener la tasa de cambio actual. Intenta de nuevo.";
-                }
-
-            } catch (error) {
-                resultDiv.textContent = "Error al conectar con el servicio de conversión.";
-                console.error("Conversion error:", error);
-            } finally {
-                convertBtn.textContent = "Convertir a COP";
-                convertBtn.disabled = false;
-                resultDiv.classList.remove('animate-pulse');
-            }
-        }
-
-        // --- LÓGICA DE TRANSACCIONES (FIREBASE) ---
-
-        /** Calcula la ruta de la colección de transacciones (privada por usuario) */
-        function getCollectionPath(uid) {
-            return `artifacts/${appId}/users/${uid}/leoon_subly_finances`;
-        }
-
-        /**
-         * Maneja el envío del formulario para agregar una nueva transacción.
-         * (Se mantiene igual, se agregaron chequeos defensivos para el DOM)
-         */
-        async function handleAddTransaction(e) {
-            e.preventDefault();
-
-            if (!db || !userId) {
-                showModal("Error", "La base de datos no está lista. Inténtalo de nuevo.");
+            if (!currentExchangeRate) {
+                showModal("Tasa No Disponible", "La tasa de cambio actual no se ha cargado. Por favor, espera o inténtalo de nuevo.");
                 return;
             }
 
-            const typeElement = document.getElementById('type');
-            const descriptionElement = document.getElementById('description');
-            const amountElement = document.getElementById('amount');
-            const teamMemberElement = document.getElementById('team-member');
-
-            // Null checks defensivos
-            if (!typeElement || !descriptionElement || !amountElement || !teamMemberElement) {
-                showModal("Error de Formulario", "No se pudieron encontrar todos los campos de entrada.");
-                return;
-            }
-
-            const type = typeElement.value;
-            const description = descriptionElement.value.trim();
-            const amount = parseFloat(amountElement.value);
-            const teamMember = teamMemberElement.value.trim() || 'No Asignado';
-
-            // Campos específicos de la compañía
-            const company = currentCompany;
-            let clientProject = null;
-            let serviceType = null;
-            
-            if (company === 'LEOON TEAM') {
-                const clientInput = document.getElementById('client-project');
-                if (clientInput) clientProject = clientInput.value.trim();
-                
-                if (!clientProject) {
-                    showModal("Datos Inválidos", "Para LEOON TEAM, el campo 'Cliente / Proyecto' es obligatorio.");
-                    return;
-                }
-            } else if (company === 'SUBLY +') {
-                const serviceSelect = document.getElementById('service-type');
-                if (serviceSelect) serviceType = serviceSelect.value;
-            }
-            
-            // Validación general
-            if (!description || isNaN(amount) || amount < 1) { 
-                showModal("Datos Inválidos", "Por favor, completa la descripción y el monto con un valor positivo (mínimo 1 COP).");
-                return;
-            }
-
-            const transactionData = {
-                company: company, 
-                type: type,
-                description: description,
-                amount: amount,
-                client_project: clientProject, 
-                service_type: serviceType,     
-                team_member: teamMember,
-                timestamp: Date.now(),
-            };
-
-            try {
-                const collectionRef = collection(db, getCollectionPath(userId));
-                await addDoc(collectionRef, transactionData);
-                document.getElementById('transaction-form').reset();
-                
-                const clientInput = document.getElementById('client-project');
-                const serviceSelect = document.getElementById('service-type');
-                if (clientInput) clientInput.value = ''; 
-                if (serviceSelect) serviceSelect.value = 'Venta General';
-                
-                showModal("Éxito", `¡${type} añadido correctamente a ${company}!`);
-            } catch (error) {
-                console.error("Error al añadir la transacción:", error);
-                showModal("Error de Base de Datos", `No se pudo guardar la transacción: ${error.message}`);
-            }
-        }
-
-        /**
-         * Renderiza la lista de transacciones y actualiza el resumen.
-         */
-        function renderTransactions(transactions) {
-            const listElement = document.getElementById('transaction-list');
-            const loadingMessage = document.getElementById('loading-message');
-            
-            if (listElement) listElement.innerHTML = ''; 
-            if (loadingMessage) loadingMessage.classList.add('hidden');
-
-            let totalIncome = 0;
-            let totalExpense = 0;
-
-            if (transactions.length === 0) {
-                if (listElement) listElement.innerHTML = `<p class="text-center text-gray-500 py-4">No hay transacciones registradas para ${currentCompany}. ¡Empieza a añadir algunas!</p>`;
-            }
-
-            // 1. Renderizar la lista
-            transactions.forEach(doc => {
-                const data = doc.data();
-                const id = doc.id;
-                const isIncome = data.type === 'Ingreso';
-
-                // Cálculo de totales
-                if (isIncome) {
-                    totalIncome += data.amount;
-                } else {
-                    totalExpense += data.amount;
-                }
-
-                const date = new Date(data.timestamp);
-                const dateString = date.toLocaleDateString('es-CO');
-                const timeString = date.toLocaleTimeString('es-CO', {hour: '2-digit', minute:'2-digit'});
-                const colorClass = isIncome ? 'ingreso-bg border-green-300' : 'gasto-bg border-red-300';
-                const textClass = isIncome ? 'ingreso-text' : 'gasto-text';
-                const sign = isIncome ? '+' : '-';
-                
-                let projectOrServiceSpan = '';
-                if (currentCompany === 'LEOON TEAM' && data.client_project) {
-                    projectOrServiceSpan = `· <span class="font-bold text-indigo-600">${data.client_project}</span>`;
-                } else if (currentCompany === 'SUBLY +' && data.service_type) {
-                    projectOrServiceSpan = `· <span class="font-medium text-gray-700">${data.service_type}</span>`;
-                }
-
-
-                const itemHtml = `
-                    <div class="flex justify-between items-center p-4 rounded-xl shadow-sm border ${colorClass} transition duration-200 hover:shadow-md">
-                        <div class="flex-1 min-w-0">
-                            <p class="font-bold text-gray-800 truncate">${data.description}</p>
-                            <p class="text-xs text-gray-500 mt-0.5">
-                                ${dateString} ${timeString} · ${data.team_member} ${projectOrServiceSpan}
-                            </p>
-                        </div>
-                        <div class="text-right ml-4 flex items-center">
-                            <span class="font-extrabold text-lg ${textClass} mr-4">
-                                ${sign} ${formatCurrency(data.amount)}
-                            </span>
-                            <button data-id="${id}" class="delete-btn text-gray-400 hover:text-red-500 transition duration-150 p-2 rounded-full hover:bg-red-100" title="Eliminar Transacción">
-                                <!-- Icono SVG de Papelera (Trash) -->
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                if (listElement) listElement.insertAdjacentHTML('beforeend', itemHtml);
-            });
-
-            // 2. Actualizar el resumen
-            const netProfit = totalIncome - totalExpense;
-
-            const totalIncomeEl = document.getElementById('total-income');
-            const totalExpenseEl = document.getElementById('total-expense');
-            const netProfitElement = document.getElementById('net-profit');
-
-            if (totalIncomeEl) totalIncomeEl.textContent = formatCurrency(totalIncome);
-            if (totalExpenseEl) totalExpenseEl.textContent = formatCurrency(totalExpense);
-            
-            if (netProfitElement) {
-                netProfitElement.textContent = formatCurrency(netProfit);
-                netProfitElement.classList.remove('text-green-700', 'text-red-700', 'text-blue-700');
-                if (netProfit > 0) {
-                    netProfitElement.classList.add('text-green-700');
-                } else if (netProfit < 0) {
-                    netProfitElement.classList.add('text-red-700');
-                } else {
-                    netProfitElement.classList.add('text-blue-700');
-                }
-            }
-            
-            // 3. Re-asignar eventos de eliminación
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', handleDeleteTransaction);
-            });
-        }
-
-        /**
-         * Maneja la eliminación de una transacción.
-         */
-        async function handleDeleteTransaction(e) {
-            const transactionId = e.currentTarget.getAttribute('data-id');
-
-            if (!db || !userId) {
-                 showModal("Error", "La base de datos no está lista.");
-                 return;
-            }
-
-            try {
-                const docRef = doc(db, getCollectionPath(userId), transactionId);
-                await deleteDoc(docRef);
-                showModal("Eliminado", "Transacción eliminada con éxito.");
-            } catch (error) {
-                console.error("Error al eliminar la transacción:", error);
-                showModal("Error", `No se pudo eliminar la transacción: ${error.message}`);
-            }
-        }
-
-        /** Configura el listener de tiempo real con onSnapshot, filtrando por la compañía activa. */
-        function setupRealtimeListener() {
-            if (unsubscribe) {
-                unsubscribe(); // Detiene el listener anterior
-                unsubscribe = null;
-            }
-
-            if (!db || !userId) {
-                console.error("No se puede iniciar el listener, DB o User ID no están listos.");
-                const loadingMessage = document.getElementById('loading-message');
-                if(loadingMessage) loadingMessage.textContent = 'Error al cargar datos. Verifica la conexión.';
-                return;
-            }
-            
-            const loadingMessage = document.getElementById('loading-message');
-            if (loadingMessage) {
-                loadingMessage.classList.remove('hidden');
-                loadingMessage.textContent = `Cargando transacciones para ${currentCompany}...`;
-            }
-
-            const transactionsCol = collection(db, getCollectionPath(userId));
-            const q = query(
-                transactionsCol,
-                where('company', '==', currentCompany)
-            ); 
-
-            // onSnapshot se activa inmediatamente y cada vez que hay un cambio en la colección
-            unsubscribe = onSnapshot(q, (querySnapshot) => {
-                const transactions = [];
-                querySnapshot.forEach((doc) => {
-                    transactions.push(doc); 
-                });
-                // Ordenar por timestamp en memoria (descendente)
-                transactions.sort((a, b) => b.data().timestamp - a.data().timestamp);
-                renderTransactions(transactions);
-            }, (error) => {
-                console.error("Error en el listener de onSnapshot:", error);
-                const loadingMessage = document.getElementById('loading-message');
-                if(loadingMessage) loadingMessage.textContent = 'Error de conexión: No se pudieron cargar las transacciones en tiempo real.';
-                showModal("Error de Sincronización", "Hay un problema con la conexión en tiempo real a la base de datos.");
-            });
+            const copAmount = usdAmount * currentExchangeRate;
+            resultSpan.textContent = `$${copAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")} COP`;
         }
 
         // --- INICIO DE LA APLICACIÓN ---
 
         window.onload = async () => {
-            const isAuthenticated = await initFirebase();
+            // Establecer la fecha actual por defecto en el formulario
+            document.getElementById('date').valueAsDate = new Date();
 
-            if (isAuthenticated) {
-                // Iniciar listener para la compañía por defecto (LEOON TEAM)
-                setupRealtimeListener();
-            } else {
-                const loadingMessage = document.getElementById('loading-message');
-                if(loadingMessage) loadingMessage.textContent = 'Autenticación fallida. Los datos no se guardarán.';
-            }
+            // Cargar la tasa de cambio al iniciar
+            await fetchExchangeRate();
+
+            // Cargar las transacciones iniciales (desde localStorage)
+            loadTransactions();
 
             // Asignar manejador de evento al formulario
             const form = document.getElementById('transaction-form');
             if(form) form.addEventListener('submit', handleAddTransaction);
-            
+
             // Asignar manejador de evento al conversor
             const convertBtn = document.getElementById('convert-btn');
             if(convertBtn) convertBtn.addEventListener('click', handleConvertCurrency);
-            
+
             // Configurar la vista inicial (Finanzas) y la compañía por defecto (LEOON TEAM)
             window.switchView('finances');
             window.switchCompany('LEOON TEAM');
